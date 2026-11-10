@@ -46,3 +46,18 @@ stages:
     metrics:
     - metrics/train_metrics.json:
         cache: false
+  reference_stats:
+    cmd: python src/monitoring/build_reference.py
+    deps:
+    - data/processed/train.csv
+    - src/monitoring/build_reference.py
+    - src/monitoring/drift.py
+    params:
+    - monitoring.categorical_features
+    - monitoring.n_bins
+    - monitoring.numeric_features
+    - monitoring.reference_path
+    - monitoring.train_path
+    outs:
+    - monitoring/reference_stats.json:
+        cache: false

@@ -36,3 +36,16 @@ train:
       n_estimators: 300
       max_depth: 4
       learning_rate: 0.05
+
+monitoring:
+  train_path: data/processed/train.csv
+  reference_path: monitoring/reference_stats.json
+  n_bins: 10
+  window_size: 200
+  psi_warn: 0.1
+  psi_alert: 0.25
+  numeric_features: [tenure, MonthlyCharges, TotalCharges]
+  categorical_features: [gender, SeniorCitizen, Partner, Dependents, PhoneService,
+    MultipleLines, InternetService, OnlineSecurity, OnlineBackup, DeviceProtection,
+    TechSupport, StreamingTV, StreamingMovies, Contract, PaperlessBilling,
+    PaymentMethod]

@@ -129,3 +129,49 @@ stages:
       hash: md5
       md5: f86f8a0e905653dbdc5dafcc61af7f6b
       size: 6966146
+  reference_stats:
+    cmd: python src/monitoring/build_reference.py
+    deps:
+    - path: data/processed/train.csv
+      hash: md5
+      md5: 65f01488474d0468ac717f122822231a
+      size: 846470
+    - path: src/monitoring/build_reference.py
+      hash: md5
+      md5: f200ab8bcbb01c885448dc7619280ab4
+      size: 1582
+    - path: src/monitoring/drift.py
+      hash: md5
+      md5: 849fead69b1db6ec99d811aef3ab0a13
+      size: 2225
+    params:
+      params.yaml:
+        monitoring.categorical_features:
+        - gender
+        - SeniorCitizen
+        - Partner
+        - Dependents
+        - PhoneService
+        - MultipleLines
+        - InternetService
+        - OnlineSecurity
+        - OnlineBackup
+        - DeviceProtection
+        - TechSupport
+        - StreamingTV
+        - StreamingMovies
+        - Contract
+        - PaperlessBilling
+        - PaymentMethod
+        monitoring.n_bins: 10
+        monitoring.numeric_features:
+        - tenure
+        - MonthlyCharges
+        - TotalCharges
+        monitoring.reference_path: monitoring/reference_stats.json
+        monitoring.train_path: data/processed/train.csv
+    outs:
+    - path: monitoring/reference_stats.json
+      hash: md5
+      md5: b9f0783ae0faf2e12bc3bce52917835d
+      size: 4836
