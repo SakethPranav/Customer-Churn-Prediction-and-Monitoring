@@ -1,6 +1,6 @@
 {
   "best_model": "random_forest",
-  "mlflow_run_id": "1c3490da97be4b82af7b6c963da42cc2",
+  "mlflow_run_id": "8a319b4b57cc4617bc01404cfd245af9",
   "registered_version": 1,
   "cv_pr_auc_mean": 0.664,
   "cv_pr_auc_std": 0.0193,

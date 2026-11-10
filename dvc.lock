@@ -97,8 +97,8 @@ stages:
       size: 846470
     - path: src/training/train.py
       hash: md5
-      md5: d7fa768e5c9e8c53726c217bb31003a3
-      size: 7453
+      md5: e45e8b01260c9406a3aa8cbd98cec71e
+      size: 7531
     params:
       params.yaml:
         data.target: Churn
@@ -123,7 +123,7 @@ stages:
     outs:
     - path: metrics/train_metrics.json
       hash: md5
-      md5: 62bc00e63787202e24549951925fda76
+      md5: da1b92f313020ef01d6d2a09c6811665
       size: 295
     - path: models/best_model.joblib
       hash: md5
