@@ -18,6 +18,8 @@ services:
       MODEL_ALIAS: champion
     ports:
       - "8000:8000"
+    volumes:
+      - ./monitoring:/app/monitoring:ro
     depends_on:
       mlflow:
         condition: service_healthy

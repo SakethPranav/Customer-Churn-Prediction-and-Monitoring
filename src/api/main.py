@@ -12,8 +12,10 @@ from mlflow.tracking import MlflowClient
 from prometheus_client import (CONTENT_TYPE_LATEST, Counter, Gauge, Histogram,
                                generate_latest)
 
+from src.api.drift_monitor import DriftMonitor
 from src.api.schemas import (BatchRequest, BatchResponse, Customer,
-                             HealthResponse, Prediction, PredictionResponse)
+                             DriftResponse, HealthResponse, Prediction,
+                             PredictionResponse)
 from src.common.features import engineer_features
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -42,6 +44,11 @@ PROBABILITY = Histogram("churn_prediction_probability",
 MODEL_LOADED = Gauge("churn_model_loaded", "1 if a model is loaded, else 0")
 MODEL_VERSION = Gauge("churn_model_version", "Registered version of the loaded model")
 MODEL_LOADED.set(0)
+PSI_GAUGE = Gauge("churn_feature_psi",
+                  "PSI of live inputs against the training reference", ["feature"])
+PSI_MAX = Gauge("churn_drift_max_psi", "Largest per-feature PSI in the live window")
+WINDOW_ROWS = Gauge("churn_drift_window_rows", "Customers currently in the drift window")
+monitor = DriftMonitor()
 
 
 def load_model() -> None:
@@ -109,6 +116,7 @@ def score(customers: list[Customer]) -> list[Prediction]:
     except Exception:
         log.exception("Scoring failed")
         raise HTTPException(status_code=500, detail="Prediction failed")
+    monitor.add([c.model_dump() for c in customers])
     results = []
     for p in probs:
         tier = risk_tier(float(p))
@@ -129,9 +137,26 @@ def health() -> HealthResponse:
                           model_version=state["version"])
 
 
+def publish_drift() -> dict:
+    """Compute the current drift report and publish it as Prometheus gauges."""
+    report = monitor.report()
+    for name, value in report["feature_psi"].items():
+        PSI_GAUGE.labels(name).set(value)
+    PSI_MAX.set(report["max_psi"])
+    WINDOW_ROWS.set(report["window_size"])
+    return report
+
+
+@app.get("/drift", response_model=DriftResponse, tags=["monitoring"])
+def drift() -> DriftResponse:
+    """Input drift (PSI) of the most recent requests against the training data."""
+    return DriftResponse(**publish_drift())
+
+
 @app.get("/metrics", tags=["system"])
 def metrics() -> Response:
     """Prometheus metrics in the text exposition format."""
+    publish_drift()
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
@@ -160,6 +185,7 @@ def reload_model() -> dict:
     """Reload the champion model (used after retraining promotes a new one)."""
     try:
         load_model()
+        monitor.reload_reference()
     except Exception:
         log.exception("Reload failed")
         raise HTTPException(status_code=500, detail="Model reload failed")

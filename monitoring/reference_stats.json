@@ -1,6 +1,13 @@
 {
   "n_rows": 5634,
   "source": "data/processed/train.csv",
+  "settings": {
+    "n_bins": 10,
+    "window_size": 300,
+    "min_window": 300,
+    "psi_warn": 0.1,
+    "psi_alert": 0.25
+  },
   "features": {
     "tenure": {
       "type": "numeric",

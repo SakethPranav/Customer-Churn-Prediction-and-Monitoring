@@ -54,10 +54,14 @@ stages:
     - src/monitoring/drift.py
     params:
     - monitoring.categorical_features
+    - monitoring.min_window
     - monitoring.n_bins
     - monitoring.numeric_features
+    - monitoring.psi_alert
+    - monitoring.psi_warn
     - monitoring.reference_path
     - monitoring.train_path
+    - monitoring.window_size
     outs:
     - monitoring/reference_stats.json:
         cache: false

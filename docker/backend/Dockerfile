@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/__init__.py src/__init__.py
 COPY src/api src/api
 COPY src/common src/common
+COPY src/monitoring src/monitoring
+COPY monitoring monitoring
 
 RUN useradd --create-home appuser
 USER appuser

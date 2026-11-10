@@ -138,8 +138,8 @@ stages:
       size: 846470
     - path: src/monitoring/build_reference.py
       hash: md5
-      md5: f200ab8bcbb01c885448dc7619280ab4
-      size: 1582
+      md5: 6f597384c9f298d2a3dfcd1715d1e26d
+      size: 1906
     - path: src/monitoring/drift.py
       hash: md5
       md5: 849fead69b1db6ec99d811aef3ab0a13
@@ -163,15 +163,19 @@ stages:
         - Contract
         - PaperlessBilling
         - PaymentMethod
+        monitoring.min_window: 300
         monitoring.n_bins: 10
         monitoring.numeric_features:
         - tenure
         - MonthlyCharges
         - TotalCharges
+        monitoring.psi_alert: 0.25
+        monitoring.psi_warn: 0.1
         monitoring.reference_path: monitoring/reference_stats.json
         monitoring.train_path: data/processed/train.csv
+        monitoring.window_size: 300
     outs:
     - path: monitoring/reference_stats.json
       hash: md5
-      md5: b9f0783ae0faf2e12bc3bce52917835d
-      size: 4836
+      md5: e12fe97f4e7f377d8c7d76e6191301a7
+      size: 4965

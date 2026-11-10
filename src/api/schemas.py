@@ -69,3 +69,14 @@ class HealthResponse(BaseModel):
     model_loaded: bool
     model_name: str
     model_version: str | None = None
+
+
+class DriftResponse(BaseModel):
+    """Input drift of recent requests against the training data."""
+
+    window_size: int = Field(description="Requests currently in the window")
+    min_window: int = Field(description="Rows needed before PSI is reported")
+    ready: bool
+    max_psi: float = Field(description="Largest per-feature PSI")
+    status: Literal["insufficient_data", "ok", "warn", "alert"]
+    feature_psi: dict[str, float]
