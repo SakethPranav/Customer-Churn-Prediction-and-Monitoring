@@ -29,11 +29,37 @@ services:
     environment:
       API_URL: http://backend:8000
       MLFLOW_URL: http://localhost:5000
-      GRAFANA_URL: http://localhost:3000
+      GRAFANA_URL: http://localhost:3001
     ports:
       - "8501:8501"
     depends_on:
       - backend
 
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9091:9090"
+    depends_on:
+      - backend
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+
 volumes:
   mlflow_data:
+  prometheus_data:
+  grafana_data:
