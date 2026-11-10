@@ -23,3 +23,60 @@ stages:
       hash: md5
       md5: b5faaa0cf0adc33361689ac64fe32de5
       size: 885515
+  featurize:
+    cmd: python src/pipeline/featurize.py
+    deps:
+    - path: data/processed/telco_clean.csv
+      hash: md5
+      md5: b5faaa0cf0adc33361689ac64fe32de5
+      size: 885515
+    - path: src/pipeline/featurize.py
+      hash: md5
+      md5: 7f09113ddbddd65aaf49e50c6a174934
+      size: 3511
+    params:
+      params.yaml:
+        featurize:
+          input_path: data/processed/telco_clean.csv
+          output_path: data/processed/telco_features.csv
+          metrics_path: metrics/featurize_timing.json
+          n_partitions: 4
+          num_cpus: 4
+    outs:
+    - path: data/processed/telco_features.csv
+      hash: md5
+      md5: 13bba07463a5799b65cf2fafa88955a8
+      size: 1058292
+    - path: metrics/featurize_timing.json
+      hash: md5
+      md5: 5be54a5cb71e177220c59da6cdaf8e3a
+      size: 167
+  split:
+    cmd: python src/pipeline/split_data.py
+    deps:
+    - path: data/processed/telco_features.csv
+      hash: md5
+      md5: 13bba07463a5799b65cf2fafa88955a8
+      size: 1058292
+    - path: src/pipeline/split_data.py
+      hash: md5
+      md5: 160e55a937d3708c7e10bcb7031cbed0
+      size: 1031
+    params:
+      params.yaml:
+        data.target: Churn
+        split:
+          input_path: data/processed/telco_features.csv
+          train_path: data/processed/train.csv
+          test_path: data/processed/test.csv
+          test_size: 0.2
+          random_state: 42
+    outs:
+    - path: data/processed/test.csv
+      hash: md5
+      md5: 9a37aac76129c5744806983778ea63b7
+      size: 212126
+    - path: data/processed/train.csv
+      hash: md5
+      md5: 65f01488474d0468ac717f122822231a
+      size: 846470

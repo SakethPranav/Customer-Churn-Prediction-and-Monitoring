@@ -3,3 +3,17 @@ data:
   processed_path: data/processed/telco_clean.csv
   target: Churn
   id_column: customerID
+
+featurize:
+  input_path: data/processed/telco_clean.csv
+  output_path: data/processed/telco_features.csv
+  metrics_path: metrics/featurize_timing.json
+  n_partitions: 4
+  num_cpus: 4
+
+split:
+  input_path: data/processed/telco_features.csv
+  train_path: data/processed/train.csv
+  test_path: data/processed/test.csv
+  test_size: 0.2
+  random_state: 42

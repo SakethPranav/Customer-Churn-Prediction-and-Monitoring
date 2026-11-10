@@ -8,3 +8,26 @@ stages:
     - data
     outs:
     - data/processed/telco_clean.csv
+  featurize:
+    cmd: python src/pipeline/featurize.py
+    deps:
+    - data/processed/telco_clean.csv
+    - src/pipeline/featurize.py
+    params:
+    - featurize
+    outs:
+    - data/processed/telco_features.csv
+    metrics:
+    - metrics/featurize_timing.json:
+        cache: false
+  split:
+    cmd: python src/pipeline/split_data.py
+    deps:
+    - data/processed/telco_features.csv
+    - src/pipeline/split_data.py
+    params:
+    - data.target
+    - split
+    outs:
+    - data/processed/test.csv
+    - data/processed/train.csv
