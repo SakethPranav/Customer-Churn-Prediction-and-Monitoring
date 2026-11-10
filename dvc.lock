@@ -1,0 +1,25 @@
+schema: '2.0'
+stages:
+  clean_data:
+    cmd: python src/pipeline/clean_data.py
+    deps:
+    - path: data/raw/telco_churn.csv
+      hash: md5
+      md5: 0f9de68e012bd3aed5fa7cdc9fc421af
+      size: 977501
+    - path: src/pipeline/clean_data.py
+      hash: md5
+      md5: 50d6b017c604fd91fc5cd69cc567324e
+      size: 2379
+    params:
+      params.yaml:
+        data:
+          raw_path: data/raw/telco_churn.csv
+          processed_path: data/processed/telco_clean.csv
+          target: Churn
+          id_column: customerID
+    outs:
+    - path: data/processed/telco_clean.csv
+      hash: md5
+      md5: b5faaa0cf0adc33361689ac64fe32de5
+      size: 885515

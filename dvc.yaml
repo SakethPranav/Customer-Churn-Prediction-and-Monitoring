@@ -1,0 +1,10 @@
+stages:
+  clean_data:
+    cmd: python src/pipeline/clean_data.py
+    deps:
+    - data/raw/telco_churn.csv
+    - src/pipeline/clean_data.py
+    params:
+    - data
+    outs:
+    - data/processed/telco_clean.csv
