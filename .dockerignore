@@ -9,5 +9,4 @@ models/
 metrics/
 docs/
 tests/
-frontend/
 *.md

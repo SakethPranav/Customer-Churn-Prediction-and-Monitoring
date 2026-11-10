@@ -1,4 +1,5 @@
 """Model training stage with MLflow experiment tracking."""
+import os
 import hashlib
 import json
 import logging
@@ -107,7 +108,7 @@ def main() -> None:
         tags = {**git_info(), "train_data_md5": file_md5(split["train_path"])}
         log.info("Train %s, test %s", X_train.shape, X_test.shape)
 
-        mlflow.set_tracking_uri(p["tracking_uri"])
+        mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", p["tracking_uri"]))
         mlflow.set_experiment(p["experiment_name"])
         cv = StratifiedKFold(p["cv_folds"], shuffle=True, random_state=p["random_state"])
 
@@ -157,7 +158,7 @@ def main() -> None:
                  version.version)
     except Exception:
         log.exception("Training failed (tracking server: %s)",
-                      p["tracking_uri"])
+                      os.getenv("MLFLOW_TRACKING_URI", p["tracking_uri"]))
         sys.exit(1)
 
     Path("models").mkdir(exist_ok=True)

@@ -1,0 +1,39 @@
+services:
+  mlflow:
+    build:
+      context: .
+      dockerfile: docker/mlflow/Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlflow
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MODEL_NAME: churn-model
+      MODEL_ALIAS: champion
+    ports:
+      - "8000:8000"
+    depends_on:
+      mlflow:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    environment:
+      API_URL: http://backend:8000
+      MLFLOW_URL: http://localhost:5000
+      GRAFANA_URL: http://localhost:3000
+    ports:
+      - "8501:8501"
+    depends_on:
+      - backend
+
+volumes:
+  mlflow_data:
