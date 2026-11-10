@@ -17,3 +17,22 @@ split:
   test_path: data/processed/test.csv
   test_size: 0.2
   random_state: 42
+
+train:
+  tracking_uri: http://127.0.0.1:5000
+  experiment_name: churn-prediction
+  registered_model_name: churn-model
+  cv_folds: 5
+  random_state: 42
+  models:
+    logistic_regression:
+      C: 1.0
+      max_iter: 1000
+    random_forest:
+      n_estimators: 300
+      max_depth: 8
+      min_samples_leaf: 5
+    xgboost:
+      n_estimators: 300
+      max_depth: 4
+      learning_rate: 0.05

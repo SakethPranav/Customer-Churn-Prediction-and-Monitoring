@@ -80,3 +80,48 @@ stages:
       hash: md5
       md5: 65f01488474d0468ac717f122822231a
       size: 846470
+  train:
+    cmd: python src/training/train.py
+    deps:
+    - path: data/processed/test.csv
+      hash: md5
+      md5: 9a37aac76129c5744806983778ea63b7
+      size: 212126
+    - path: data/processed/train.csv
+      hash: md5
+      md5: 65f01488474d0468ac717f122822231a
+      size: 846470
+    - path: src/training/train.py
+      hash: md5
+      md5: d7fa768e5c9e8c53726c217bb31003a3
+      size: 7453
+    params:
+      params.yaml:
+        data.target: Churn
+        train:
+          tracking_uri: http://127.0.0.1:5000
+          experiment_name: churn-prediction
+          registered_model_name: churn-model
+          cv_folds: 5
+          random_state: 42
+          models:
+            logistic_regression:
+              C: 1.0
+              max_iter: 1000
+            random_forest:
+              n_estimators: 300
+              max_depth: 8
+              min_samples_leaf: 5
+            xgboost:
+              n_estimators: 300
+              max_depth: 4
+              learning_rate: 0.05
+    outs:
+    - path: metrics/train_metrics.json
+      hash: md5
+      md5: 62bc00e63787202e24549951925fda76
+      size: 295
+    - path: models/best_model.joblib
+      hash: md5
+      md5: f86f8a0e905653dbdc5dafcc61af7f6b
+      size: 6966146
