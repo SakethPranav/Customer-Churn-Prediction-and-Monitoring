@@ -1,0 +1,13 @@
+.venv/
+.git/
+__pycache__/
+*.pyc
+mlflow.db
+mlartifacts/
+data/
+models/
+metrics/
+docs/
+tests/
+frontend/
+*.md
