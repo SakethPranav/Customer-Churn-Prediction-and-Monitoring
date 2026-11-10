@@ -7,8 +7,10 @@ from contextlib import asynccontextmanager
 import mlflow
 import mlflow.sklearn
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from mlflow.tracking import MlflowClient
+from prometheus_client import (CONTENT_TYPE_LATEST, Counter, Gauge, Histogram,
+                               generate_latest)
 
 from src.api.schemas import (BatchRequest, BatchResponse, Customer,
                              HealthResponse, Prediction, PredictionResponse)
@@ -17,7 +19,7 @@ from src.common.features import engineer_features
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("churn-api")
 
-# Configuration comes from environment variables (set by docker-compose later).
+# Configuration comes from environment variables (set by docker-compose).
 TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
 MODEL_NAME = os.getenv("MODEL_NAME", "churn-model")
 MODEL_ALIAS = os.getenv("MODEL_ALIAS", "champion")
@@ -26,6 +28,21 @@ MEDIUM_RISK, HIGH_RISK = 0.3, 0.6
 
 state: dict = {"model": None, "version": None}
 
+# --- Prometheus metrics ---------------------------------------------------
+REQUESTS = Counter("churn_api_requests_total", "HTTP requests handled",
+                   ["method", "endpoint", "status"])
+LATENCY = Histogram("churn_api_request_latency_seconds", "Request latency in seconds",
+                    ["endpoint"],
+                    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5))
+PREDICTIONS = Counter("churn_predictions_total", "Predictions made, by risk tier",
+                      ["risk_tier"])
+PROBABILITY = Histogram("churn_prediction_probability",
+                        "Distribution of predicted churn probabilities",
+                        buckets=(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0))
+MODEL_LOADED = Gauge("churn_model_loaded", "1 if a model is loaded, else 0")
+MODEL_VERSION = Gauge("churn_model_version", "Registered version of the loaded model")
+MODEL_LOADED.set(0)
+
 
 def load_model() -> None:
     """Load the champion model from the MLflow registry into memory."""
@@ -33,6 +50,8 @@ def load_model() -> None:
     state["model"] = mlflow.sklearn.load_model(f"models:/{MODEL_NAME}@{MODEL_ALIAS}")
     mv = MlflowClient().get_model_version_by_alias(MODEL_NAME, MODEL_ALIAS)
     state["version"] = str(mv.version)
+    MODEL_LOADED.set(1)
+    MODEL_VERSION.set(float(mv.version))
     log.info("Loaded %s v%s (alias %s)", MODEL_NAME, state["version"], MODEL_ALIAS)
 
 
@@ -54,6 +73,23 @@ app = FastAPI(
 )
 
 
+@app.middleware("http")
+async def track_metrics(request: Request, call_next):
+    """Record request count and latency for every call except /metrics."""
+    start = time.perf_counter()
+    status = 500
+    try:
+        response = await call_next(request)
+        status = response.status_code
+        return response
+    finally:
+        route = request.scope.get("route")
+        endpoint = route.path if route else "unmatched"
+        if endpoint != "/metrics":
+            REQUESTS.labels(request.method, endpoint, str(status)).inc()
+            LATENCY.labels(endpoint).observe(time.perf_counter() - start)
+
+
 def risk_tier(p: float) -> str:
     """Map a churn probability to a business-friendly tier."""
     if p >= HIGH_RISK:
@@ -73,9 +109,15 @@ def score(customers: list[Customer]) -> list[Prediction]:
     except Exception:
         log.exception("Scoring failed")
         raise HTTPException(status_code=500, detail="Prediction failed")
-    return [Prediction(churn_probability=round(float(p), 4),
-                       churn_prediction=int(p >= DECISION_THRESHOLD),
-                       risk_tier=risk_tier(float(p))) for p in probs]
+    results = []
+    for p in probs:
+        tier = risk_tier(float(p))
+        PROBABILITY.observe(float(p))
+        PREDICTIONS.labels(tier).inc()
+        results.append(Prediction(churn_probability=round(float(p), 4),
+                                  churn_prediction=int(p >= DECISION_THRESHOLD),
+                                  risk_tier=tier))
+    return results
 
 
 @app.get("/health", response_model=HealthResponse, tags=["system"])
@@ -85,6 +127,12 @@ def health() -> HealthResponse:
     return HealthResponse(status="ok" if loaded else "degraded",
                           model_loaded=loaded, model_name=MODEL_NAME,
                           model_version=state["version"])
+
+
+@app.get("/metrics", tags=["system"])
+def metrics() -> Response:
+    """Prometheus metrics in the text exposition format."""
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.post("/predict", response_model=PredictionResponse, tags=["prediction"])
