@@ -1,8 +1,8 @@
 {
   "rows": 7043,
   "n_partitions": 4,
-  "pandas_seconds": 0.0063,
-  "ray_processing_seconds": 0.5393,
-  "ray_init_seconds": 2.3635,
-  "ray_rows_per_second": 13059.5
+  "pandas_seconds": 0.0062,
+  "ray_processing_seconds": 0.5675,
+  "ray_init_seconds": 2.438,
+  "ray_rows_per_second": 12410.1
 }

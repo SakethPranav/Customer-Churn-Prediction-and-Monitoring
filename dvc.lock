@@ -30,10 +30,14 @@ stages:
       hash: md5
       md5: b5faaa0cf0adc33361689ac64fe32de5
       size: 885515
+    - path: src/common/features.py
+      hash: md5
+      md5: 928f81e1346a7c93dba99a622c718c84
+      size: 1087
     - path: src/pipeline/featurize.py
       hash: md5
-      md5: 7f09113ddbddd65aaf49e50c6a174934
-      size: 3511
+      md5: 6d547d6e7e6f95b4e4c32ed4920a297d
+      size: 2819
     params:
       params.yaml:
         featurize:
@@ -49,8 +53,8 @@ stages:
       size: 1058292
     - path: metrics/featurize_timing.json
       hash: md5
-      md5: 5be54a5cb71e177220c59da6cdaf8e3a
-      size: 167
+      md5: 0a0fca08ec33030ac537b21d243d7219
+      size: 166
   split:
     cmd: python src/pipeline/split_data.py
     deps:

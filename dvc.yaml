@@ -12,6 +12,7 @@ stages:
     cmd: python src/pipeline/featurize.py
     deps:
     - data/processed/telco_clean.csv
+    - src/common/features.py
     - src/pipeline/featurize.py
     params:
     - featurize
