@@ -117,3 +117,21 @@ class PerformanceResponse(BaseModel):
     window: int = Field(description="Labelled rows the metrics are computed over")
     pr_auc_floor: float = Field(description="Live PR-AUC below this means degraded")
     status: Literal["insufficient_data", "ok", "degraded"]
+
+
+class LabelledRow(BaseModel):
+    """A served prediction together with the outcome reported for it."""
+
+    prediction_id: str
+    model_version: str | None
+    probability: float = Field(description="Churn probability that was served")
+    features: Customer
+    label: Literal[0, 1] = Field(description="1 if the customer churned")
+    labelled_at: float = Field(description="Unix time the outcome was reported")
+
+
+class LabelledResponse(BaseModel):
+    """Labelled predictions for retraining, oldest outcome first."""
+
+    count: int
+    rows: list[LabelledRow]

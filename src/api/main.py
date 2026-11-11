@@ -16,7 +16,8 @@ from src.api.drift_monitor import DriftMonitor
 from src.api.prediction_log import PredictionLog
 from src.api.schemas import (BatchRequest, BatchResponse, Customer,
                              DriftResponse, FeedbackRequest, FeedbackResponse,
-                             HealthResponse, PerformanceResponse, Prediction,
+                             HealthResponse, LabelledResponse,
+                             PerformanceResponse, Prediction,
                              PredictionResponse)
 from src.common.features import engineer_features
 
@@ -234,6 +235,18 @@ def feedback(request: FeedbackRequest) -> FeedbackResponse:
         raise HTTPException(status_code=500, detail="Could not save feedback")
     publish_performance()
     return FeedbackResponse(**result)
+
+
+@app.get("/labelled", response_model=LabelledResponse, tags=["monitoring"])
+def labelled(limit: int = 10000) -> LabelledResponse:
+    """Labelled predictions with their features, oldest outcome first (for retraining)."""
+    limit = max(1, min(limit, 100000))
+    try:
+        rows = prediction_log.export(limit)
+    except Exception:
+        log.exception("Exporting labelled rows failed")
+        raise HTTPException(status_code=500, detail="Could not read the prediction log")
+    return LabelledResponse(count=len(rows), rows=rows)
 
 
 @app.get("/performance", response_model=PerformanceResponse, tags=["monitoring"])

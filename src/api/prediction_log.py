@@ -108,6 +108,18 @@ class PredictionLog:
                 "precision": round(float(precision_score(y, pred, zero_division=0)), 4),
                 "pr_auc": round(float(average_precision_score(y, p)), 4)}
 
+    def export(self, limit: int = 10000) -> list[dict]:
+        """Labelled rows with their features, oldest outcome first (newest `limit` only)."""
+        with closing(self._connect()) as conn:
+            rows = conn.execute(
+                "SELECT id, model_version, probability, features, label, labelled_at "
+                "FROM (SELECT rowid AS rid, * FROM predictions WHERE label IS NOT NULL "
+                "ORDER BY labelled_at DESC, rowid DESC LIMIT ?) "
+                "ORDER BY labelled_at ASC, rid ASC", (limit,)).fetchall()
+        return [{"prediction_id": r[0], "model_version": r[1], "probability": r[2],
+                 "features": json.loads(r[3]), "label": r[4], "labelled_at": r[5]}
+                for r in rows]
+
     def labelled(self) -> tuple[pd.DataFrame, pd.Series]:
         """All labelled rows as features and outcomes, for retraining."""
         with closing(self._connect()) as conn:
