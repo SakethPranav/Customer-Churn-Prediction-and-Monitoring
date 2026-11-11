@@ -8,3 +8,4 @@ mlruns/
 mlflow.db
 mlartifacts/
 prediction_log/
+retrain_state.json
