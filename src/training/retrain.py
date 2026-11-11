@@ -31,7 +31,7 @@ from src.training.train import (build_pipeline, file_md5, git_info,  # noqa: E40
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("retrain")
 
-EXIT_OK, EXIT_ERROR, EXIT_NOT_ENOUGH_DATA = 0, 1, 2
+EXIT_OK, EXIT_ERROR, EXIT_NOT_ENOUGH_DATA, EXIT_RELOAD_FAILED = 0, 1, 2, 3
 
 
 def fetch_labelled(api_url: str, limit: int) -> list:
@@ -178,9 +178,12 @@ def main() -> int:
             log.info("Promoted %s as %s v%s [champion]", best, reg_name, version.version)
             try:
                 requests.post(f"{api_url}/reload", timeout=120).raise_for_status()
+                result["reloaded"] = True
                 log.info("API reloaded the new champion")
             except Exception:
+                result["reloaded"] = False
                 log.exception("Promoted, but /reload failed; call /reload manually")
+                return finish(result, EXIT_RELOAD_FAILED)
         else:
             log.info("Challenger rejected; champion v%s unchanged", champ_version.version)
         return finish(result, EXIT_OK)
