@@ -48,6 +48,9 @@ class Prediction(BaseModel):
     churn_probability: float = Field(description="Probability between 0 and 1")
     churn_prediction: Literal[0, 1] = Field(description="1 if probability >= 0.5")
     risk_tier: Literal["low", "medium", "high"]
+    prediction_id: str | None = Field(
+        default=None,
+        description="ID to quote when reporting the true outcome; null if not logged")
 
 
 class PredictionResponse(BaseModel):
@@ -80,3 +83,34 @@ class DriftResponse(BaseModel):
     max_psi: float = Field(description="Largest per-feature PSI")
     status: Literal["insufficient_data", "ok", "warn", "alert"]
     feature_psi: dict[str, float]
+
+
+class FeedbackItem(BaseModel):
+    prediction_id: str
+    churned: Literal[0, 1] = Field(description="1 if the customer churned")
+
+
+class FeedbackRequest(BaseModel):
+    """True outcomes for earlier predictions, reported later."""
+
+    items: list[FeedbackItem] = Field(min_length=1, max_length=1000)
+
+
+class FeedbackResponse(BaseModel):
+    updated: int = Field(description="Predictions that received an outcome")
+    unknown: list[str] = Field(description="IDs that were not found")
+
+
+class PerformanceResponse(BaseModel):
+    """Live model quality on the most recently labelled predictions."""
+
+    ready: bool = Field(description="False until enough labelled rows of both classes")
+    n_labelled: int = Field(description="Labelled rows in the window")
+    positives: int
+    min_labelled: int
+    threshold: float
+    recall: float | None
+    precision: float | None
+    pr_auc: float | None
+    predictions_logged: int
+    labelled_total: int

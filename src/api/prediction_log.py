@@ -78,13 +78,22 @@ class PredictionLog:
                 "SELECT COUNT(*), COUNT(label) FROM predictions").fetchone()
         return {"predictions": total, "labelled": labelled}
 
-    def performance(self, window: int, threshold: float,
-                    min_labelled: int, min_per_class: int = 10) -> dict:
-        """Recall, precision and PR-AUC over the most recently labelled rows."""
+    def performance(self, window: int, threshold: float, min_labelled: int,
+                    min_per_class: int = 10, model_version: str | None = None) -> dict:
+        """Recall, precision and PR-AUC over the most recently labelled rows.
+
+        With model_version, only predictions made by that model version count,
+        so the metrics always describe the model currently being served.
+        """
+        where, args = "label IS NOT NULL", []
+        if model_version is not None:
+            where += " AND model_version = ?"
+            args.append(str(model_version))
         with closing(self._connect()) as conn:
             rows = conn.execute(
-                "SELECT probability, label FROM predictions WHERE label IS NOT NULL "
-                "ORDER BY labelled_at DESC, rowid DESC LIMIT ?", (window,)).fetchall()
+                f"SELECT probability, label FROM predictions WHERE {where} "
+                "ORDER BY labelled_at DESC, rowid DESC LIMIT ?",
+                (*args, window)).fetchall()
         p = np.array([r[0] for r in rows], dtype=float)
         y = np.array([r[1] for r in rows], dtype=int)
         n, pos = len(rows), int(y.sum())

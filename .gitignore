@@ -7,3 +7,4 @@ mlruns/
 .DS_Store
 mlflow.db
 mlartifacts/
+prediction_log/

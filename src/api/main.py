@@ -13,8 +13,10 @@ from prometheus_client import (CONTENT_TYPE_LATEST, Counter, Gauge, Histogram,
                                generate_latest)
 
 from src.api.drift_monitor import DriftMonitor
+from src.api.prediction_log import PredictionLog
 from src.api.schemas import (BatchRequest, BatchResponse, Customer,
-                             DriftResponse, HealthResponse, Prediction,
+                             DriftResponse, FeedbackRequest, FeedbackResponse,
+                             HealthResponse, PerformanceResponse, Prediction,
                              PredictionResponse)
 from src.common.features import engineer_features
 
@@ -27,6 +29,9 @@ MODEL_NAME = os.getenv("MODEL_NAME", "churn-model")
 MODEL_ALIAS = os.getenv("MODEL_ALIAS", "champion")
 DECISION_THRESHOLD = 0.5
 MEDIUM_RISK, HIGH_RISK = 0.3, 0.6
+PREDICTION_LOG_PATH = os.getenv("PREDICTION_LOG_PATH", "prediction_log/predictions.db")
+# Live-performance window and minimum labels: provisional until calibrated (step 9c-3).
+PERF_WINDOW, PERF_MIN_LABELLED, PERF_MIN_PER_CLASS = 500, 100, 10
 
 state: dict = {"model": None, "version": None}
 
@@ -48,7 +53,14 @@ PSI_GAUGE = Gauge("churn_feature_psi",
                   "PSI of live inputs against the training reference", ["feature"])
 PSI_MAX = Gauge("churn_drift_max_psi", "Largest per-feature PSI in the live window")
 WINDOW_ROWS = Gauge("churn_drift_window_rows", "Customers currently in the drift window")
+LIVE_RECALL = Gauge("churn_live_recall", "Recall on recently labelled predictions")
+LIVE_PRECISION = Gauge("churn_live_precision",
+                       "Precision on recently labelled predictions")
+LIVE_PR_AUC = Gauge("churn_live_pr_auc", "PR-AUC on recently labelled predictions")
+LABELLED_ROWS = Gauge("churn_labelled_predictions",
+                      "Predictions that have a reported outcome")
 monitor = DriftMonitor()
+prediction_log = PredictionLog(PREDICTION_LOG_PATH)
 
 
 def load_model() -> None:
@@ -116,13 +128,20 @@ def score(customers: list[Customer]) -> list[Prediction]:
     except Exception:
         log.exception("Scoring failed")
         raise HTTPException(status_code=500, detail="Prediction failed")
-    monitor.add([c.model_dump() for c in customers])
+    rows = [c.model_dump() for c in customers]
+    monitor.add(rows)
+    try:
+        ids = prediction_log.add(rows, probs, state["version"])
+    except Exception:
+        log.exception("Could not write to the prediction log")
+        ids = [None] * len(rows)
     results = []
-    for p in probs:
+    for pid, p in zip(ids, probs):
         tier = risk_tier(float(p))
         PROBABILITY.observe(float(p))
         PREDICTIONS.labels(tier).inc()
-        results.append(Prediction(churn_probability=round(float(p), 4),
+        results.append(Prediction(prediction_id=pid,
+                                  churn_probability=round(float(p), 4),
                                   churn_prediction=int(p >= DECISION_THRESHOLD),
                                   risk_tier=tier))
     return results
@@ -147,6 +166,21 @@ def publish_drift() -> dict:
     return report
 
 
+def publish_performance() -> dict:
+    """Compute live performance of the served model and publish it as gauges."""
+    report = prediction_log.performance(
+        PERF_WINDOW, DECISION_THRESHOLD, PERF_MIN_LABELLED, PERF_MIN_PER_CLASS,
+        model_version=state["version"])
+    counts = prediction_log.counts()
+    nan = float("nan")  # shown as "no data" until enough labels exist
+    LIVE_RECALL.set(report["recall"] if report["ready"] else nan)
+    LIVE_PRECISION.set(report["precision"] if report["ready"] else nan)
+    LIVE_PR_AUC.set(report["pr_auc"] if report["ready"] else nan)
+    LABELLED_ROWS.set(counts["labelled"])
+    return {**report, "predictions_logged": counts["predictions"],
+            "labelled_total": counts["labelled"]}
+
+
 @app.get("/drift", response_model=DriftResponse, tags=["monitoring"])
 def drift() -> DriftResponse:
     """Input drift (PSI) of the most recent requests against the training data."""
@@ -157,6 +191,10 @@ def drift() -> DriftResponse:
 def metrics() -> Response:
     """Prometheus metrics in the text exposition format."""
     publish_drift()
+    try:
+        publish_performance()
+    except Exception:
+        log.exception("Could not publish live performance gauges")
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
@@ -178,6 +216,25 @@ def predict_batch(request: BatchRequest) -> BatchResponse:
     log.info("predict_batch n=%d latency_ms=%.1f", len(results),
              (time.perf_counter() - t0) * 1000)
     return BatchResponse(predictions=results, model_version=state["version"])
+
+
+@app.post("/feedback", response_model=FeedbackResponse, tags=["monitoring"])
+def feedback(request: FeedbackRequest) -> FeedbackResponse:
+    """Report true outcomes (1 = churned) for earlier predictions, by prediction ID."""
+    try:
+        result = prediction_log.label(
+            [(item.prediction_id, item.churned) for item in request.items])
+    except Exception:
+        log.exception("Saving feedback failed")
+        raise HTTPException(status_code=500, detail="Could not save feedback")
+    publish_performance()
+    return FeedbackResponse(**result)
+
+
+@app.get("/performance", response_model=PerformanceResponse, tags=["monitoring"])
+def performance() -> PerformanceResponse:
+    """Recall, precision and PR-AUC of the served model on labelled predictions."""
+    return PerformanceResponse(**publish_performance())
 
 
 @app.post("/reload", tags=["system"])

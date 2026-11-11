@@ -16,10 +16,12 @@ services:
       MLFLOW_TRACKING_URI: http://mlflow:5000
       MODEL_NAME: churn-model
       MODEL_ALIAS: champion
+      PREDICTION_LOG_PATH: /app/prediction_log/predictions.db
     ports:
       - "8000:8000"
     volumes:
       - ./monitoring:/app/monitoring:ro
+      - prediction_log:/app/prediction_log
     depends_on:
       mlflow:
         condition: service_healthy
@@ -62,6 +64,7 @@ services:
       - prometheus
 
 volumes:
+  prediction_log:
   mlflow_data:
   prometheus_data:
   grafana_data:

@@ -16,7 +16,9 @@ COPY src/common src/common
 COPY src/monitoring src/monitoring
 COPY monitoring monitoring
 
-RUN useradd --create-home appuser
+RUN useradd --create-home appuser \
+ && mkdir -p /app/prediction_log \
+ && chown appuser /app/prediction_log
 USER appuser
 
 EXPOSE 8000
