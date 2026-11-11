@@ -6,7 +6,11 @@
     "window_size": 300,
     "min_window": 300,
     "psi_warn": 0.1,
-    "psi_alert": 0.25
+    "psi_alert": 0.25,
+    "perf_window": 500,
+    "perf_min_labelled": 500,
+    "perf_min_per_class": 10,
+    "perf_pr_auc_floor": 0.54
   },
   "features": {
     "tenure": {

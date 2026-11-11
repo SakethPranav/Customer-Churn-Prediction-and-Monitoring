@@ -30,8 +30,6 @@ MODEL_ALIAS = os.getenv("MODEL_ALIAS", "champion")
 DECISION_THRESHOLD = 0.5
 MEDIUM_RISK, HIGH_RISK = 0.3, 0.6
 PREDICTION_LOG_PATH = os.getenv("PREDICTION_LOG_PATH", "prediction_log/predictions.db")
-# Live-performance window and minimum labels: provisional until calibrated (step 9c-3).
-PERF_WINDOW, PERF_MIN_LABELLED, PERF_MIN_PER_CLASS = 500, 100, 10
 
 state: dict = {"model": None, "version": None}
 
@@ -168,16 +166,23 @@ def publish_drift() -> dict:
 
 def publish_performance() -> dict:
     """Compute live performance of the served model and publish it as gauges."""
+    cfg = monitor.settings
     report = prediction_log.performance(
-        PERF_WINDOW, DECISION_THRESHOLD, PERF_MIN_LABELLED, PERF_MIN_PER_CLASS,
-        model_version=state["version"])
+        cfg["perf_window"], DECISION_THRESHOLD, cfg["perf_min_labelled"],
+        cfg["perf_min_per_class"], model_version=state["version"])
     counts = prediction_log.counts()
     nan = float("nan")  # shown as "no data" until enough labels exist
     LIVE_RECALL.set(report["recall"] if report["ready"] else nan)
     LIVE_PRECISION.set(report["precision"] if report["ready"] else nan)
     LIVE_PR_AUC.set(report["pr_auc"] if report["ready"] else nan)
     LABELLED_ROWS.set(counts["labelled"])
-    return {**report, "predictions_logged": counts["predictions"],
+    if not report["ready"]:
+        status = "insufficient_data"
+    else:
+        status = "degraded" if report["pr_auc"] < cfg["perf_pr_auc_floor"] else "ok"
+    return {**report, "status": status, "window": cfg["perf_window"],
+            "pr_auc_floor": cfg["perf_pr_auc_floor"],
+            "predictions_logged": counts["predictions"],
             "labelled_total": counts["labelled"]}
 
 

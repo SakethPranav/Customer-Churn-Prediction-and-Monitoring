@@ -13,7 +13,9 @@ from src.monitoring.drift import categorical_reference, numeric_reference  # noq
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("build-reference")
 
-SETTING_KEYS = ("n_bins", "window_size", "min_window", "psi_warn", "psi_alert")
+SETTING_KEYS = ("n_bins", "window_size", "min_window", "psi_warn", "psi_alert",
+                "perf_window", "perf_min_labelled", "perf_min_per_class",
+                "perf_pr_auc_floor")
 
 
 def main() -> None:
@@ -22,6 +24,9 @@ def main() -> None:
     try:
         if p["min_window"] > p["window_size"]:
             raise ValueError("monitoring.min_window cannot exceed monitoring.window_size")
+        if p["perf_min_labelled"] > p["perf_window"]:
+            raise ValueError(
+                "monitoring.perf_min_labelled cannot exceed monitoring.perf_window")
         df = pd.read_csv(p["train_path"])
         wanted = p["numeric_features"] + p["categorical_features"]
         missing = [c for c in wanted if c not in df.columns]

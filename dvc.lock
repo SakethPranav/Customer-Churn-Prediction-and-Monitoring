@@ -138,8 +138,8 @@ stages:
       size: 846470
     - path: src/monitoring/build_reference.py
       hash: md5
-      md5: 6f597384c9f298d2a3dfcd1715d1e26d
-      size: 1906
+      md5: 207927686dd613dd2a7d1879b7421e87
+      size: 2186
     - path: src/monitoring/drift.py
       hash: md5
       md5: 849fead69b1db6ec99d811aef3ab0a13
@@ -169,6 +169,10 @@ stages:
         - tenure
         - MonthlyCharges
         - TotalCharges
+        monitoring.perf_min_labelled: 500
+        monitoring.perf_min_per_class: 10
+        monitoring.perf_pr_auc_floor: 0.54
+        monitoring.perf_window: 500
         monitoring.psi_alert: 0.25
         monitoring.psi_warn: 0.1
         monitoring.reference_path: monitoring/reference_stats.json
@@ -177,5 +181,5 @@ stages:
     outs:
     - path: monitoring/reference_stats.json
       hash: md5
-      md5: e12fe97f4e7f377d8c7d76e6191301a7
-      size: 4965
+      md5: 0de2bab8a2627c6f1e87dcf455d92c16
+      size: 5080

@@ -57,6 +57,10 @@ stages:
     - monitoring.min_window
     - monitoring.n_bins
     - monitoring.numeric_features
+    - monitoring.perf_min_labelled
+    - monitoring.perf_min_per_class
+    - monitoring.perf_pr_auc_floor
+    - monitoring.perf_window
     - monitoring.psi_alert
     - monitoring.psi_warn
     - monitoring.reference_path

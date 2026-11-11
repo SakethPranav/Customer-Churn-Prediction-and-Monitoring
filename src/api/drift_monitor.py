@@ -18,7 +18,9 @@ log = logging.getLogger("churn-api")
 
 # Used only if the reference file has no settings block (older files).
 DEFAULT_SETTINGS = {"window_size": 300, "min_window": 300,
-                    "psi_warn": 0.1, "psi_alert": 0.25}
+                    "psi_warn": 0.1, "psi_alert": 0.25,
+                    "perf_window": 500, "perf_min_labelled": 500,
+                    "perf_min_per_class": 10, "perf_pr_auc_floor": 0.54}
 
 
 class DriftMonitor:
@@ -46,9 +48,15 @@ class DriftMonitor:
             settings = {"window_size": int(raw["window_size"]),
                         "min_window": int(raw["min_window"]),
                         "psi_warn": float(raw["psi_warn"]),
-                        "psi_alert": float(raw["psi_alert"])}
+                        "psi_alert": float(raw["psi_alert"]),
+                        "perf_window": int(raw["perf_window"]),
+                        "perf_min_labelled": int(raw["perf_min_labelled"]),
+                        "perf_min_per_class": int(raw["perf_min_per_class"]),
+                        "perf_pr_auc_floor": float(raw["perf_pr_auc_floor"])}
             if settings["min_window"] > settings["window_size"]:
                 raise ValueError("min_window cannot exceed window_size")
+            if settings["perf_min_labelled"] > settings["perf_window"]:
+                raise ValueError("perf_min_labelled cannot exceed perf_window")
         except Exception:
             log.exception("Could not load drift reference from %s", self.reference_path)
             return
@@ -59,6 +67,12 @@ class DriftMonitor:
         log.info("Drift reference loaded: %d features, window %d, warn %.2f, alert %.2f",
                  len(features), settings["window_size"],
                  settings["psi_warn"], settings["psi_alert"])
+
+    @property
+    def settings(self) -> dict:
+        """Settings from the reference file, including the live-performance ones."""
+        with self._lock:
+            return dict(self._settings)
 
     def add(self, rows: list[dict]) -> None:
         with self._lock:

@@ -114,3 +114,6 @@ class PerformanceResponse(BaseModel):
     pr_auc: float | None
     predictions_logged: int
     labelled_total: int
+    window: int = Field(description="Labelled rows the metrics are computed over")
+    pr_auc_floor: float = Field(description="Live PR-AUC below this means degraded")
+    status: Literal["insufficient_data", "ok", "degraded"]
