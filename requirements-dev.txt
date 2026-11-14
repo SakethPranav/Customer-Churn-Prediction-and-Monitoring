@@ -1,0 +1,8 @@
+-r requirements.txt
+
+# Testing
+pytest==9.2.0
+httpx2==2.16.0
+
+# Data and pipeline versioning
+dvc==3.67.1
