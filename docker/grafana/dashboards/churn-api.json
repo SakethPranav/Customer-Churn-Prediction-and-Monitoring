@@ -200,7 +200,7 @@
     {
       "id": 8,
       "type": "timeseries",
-      "title": "Input drift: top 6 features by PSI (lines at 0.1 and 0.25)",
+      "title": "Input drift: the 6 features with the highest PSI in the time range (lines at 0.1 and 0.25)",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -214,7 +214,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "topk(6, churn_feature_psi)",
+          "expr": "churn_feature_psi and on(feature) topk(6, max_over_time(churn_feature_psi[$__range]))",
           "legendFormat": "{{feature}}"
         }
       ],
@@ -242,6 +242,9 @@
             "thresholdsStyle": {
               "mode": "line"
             }
+          },
+          "color": {
+            "mode": "palette-classic"
           }
         },
         "overrides": []
@@ -316,6 +319,152 @@
       ],
       "fieldConfig": {
         "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Live model quality on the last 500 labelled predictions (line = PR-AUC floor 0.54)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 18,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "churn_live_pr_auc",
+          "legendFormat": "PR-AUC"
+        },
+        {
+          "refId": "B",
+          "expr": "churn_live_recall",
+          "legendFormat": "recall"
+        },
+        {
+          "refId": "C",
+          "expr": "churn_live_precision",
+          "legendFormat": "precision"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0.54
+              }
+            ]
+          },
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "max": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Live PR-AUC (needs 500 labels)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 32,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "churn_live_pr_auc"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "decimals": 3,
+          "noValue": "needs 500 labels",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0.54
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "Labelled predictions",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 36,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "churn_labelled_predictions"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "noValue": "0",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
         "overrides": []
       }
     }

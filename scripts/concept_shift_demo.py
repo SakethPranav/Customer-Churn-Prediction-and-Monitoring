@@ -67,9 +67,9 @@ def main() -> int:
         perf = requests.get(f"{API_URL}/performance", timeout=30).json()
     except requests.RequestException as err:
         return fail(f"cannot read the API at {API_URL}: {err}")
-    if perf["predictions_logged"] != 0:
-        return fail(f"the prediction log already holds {perf['predictions_logged']} "
-                    "predictions; reset it first so the demo cannot mix with older data")
+    if perf["labelled_total"] != 0:
+        return fail(f"the prediction log already holds {perf['labelled_total']} "
+        "labelled predictions; use a clean experiment log first")
 
     records = X.to_dict("records")
     ids = []
