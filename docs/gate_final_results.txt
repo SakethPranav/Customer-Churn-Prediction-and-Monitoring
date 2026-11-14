@@ -1,0 +1,17 @@
+10/100 done, promotions so far: 0
+20/100 done, promotions so far: 0
+30/100 done, promotions so far: 1
+40/100 done, promotions so far: 2
+50/100 done, promotions so far: 2
+60/100 done, promotions so far: 2
+70/100 done, promotions so far: 2
+80/100 done, promotions so far: 2
+90/100 done, promotions so far: 2
+100/100 done, promotions so far: 2
+
+Setting: 1000 live rows, live_weight 10.0; 100 scenarios, no change in the data
+Promotions: 2/100  (limit 5)
+Gain: mean +0.0005, sd 0.0220, 5th/95th percentile -0.0352 / +0.0383
+Share with gain >= 0.02: 0.19
+Share with bootstrap 5th percentile > 0: 0.02
+VERDICT: PASS
